@@ -1,0 +1,12 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Banco de dados local
+*.db
+*.csv
+
+# Arquivos de ambiente virtual (se usar no futuro)
+venv/
+.venv/
