@@ -108,3 +108,27 @@ def deletar_trade(trade_id):
     conn.commit()
     conn.close()
     print(f"Trade com ID {trade_id} deletado com sucesso.")
+    
+def atualizar_trade(trade_id, trade_data):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE trades 
+        SET data = ?, horario = ?, ativo = ?, tipo_operacao = ?, 
+            resultado_tipo = ?, resultado_financeiro = ?
+        WHERE id = ?
+    """, (
+        trade_data['data'],
+        trade_data['horario'],
+        trade_data['ativo'],
+        trade_data['tipo_operacao'],
+        trade_data['resultado_tipo'],
+        float(trade_data['resultado_financeiro']),
+        trade_id
+    ))
+
+    conn.commit()
+    conn.close()
+    print(f"Trade com ID {trade_id} atualizado com sucesso.")
+    
