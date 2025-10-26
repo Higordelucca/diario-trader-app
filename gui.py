@@ -9,6 +9,7 @@ import math
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import api_service
+import time
 
 class LoadingScreen(ttk.Toplevel):
     """
@@ -83,8 +84,8 @@ VALORES_POR_PONTO = {
 class TradingJournalApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Diário de Trader - v3.0")
-        self.root.geometry("1100x750")
+        self.root.title("Diário de Trader - v1.0")
+        self.root.geometry("1100x800")
 
         # --- Abas ---
         notebook = ttk.Notebook(self.root)
@@ -213,6 +214,9 @@ class TradingJournalApp:
         self.tree.pack(side=LEFT, fill=BOTH, expand=True)
         self.tree.bind('<ButtonRelease-1>', self._on_trade_select)
 
+        self.tree.tag_configure('gain', background="#69c569") # Verde claro
+        self.tree.tag_configure('loss', background="#eb7e7e") # Vermelho claro
+
     def _criar_grafico(self, parent_frame):
         # ... (código existente)
         fig = Figure(figsize=(5, 4), dpi=100)
@@ -289,12 +293,21 @@ class TradingJournalApp:
         self.edit_btn.config(state="disabled")
         for row in self.tree.get_children():
             self.tree.delete(row)
+        
+        # --- INÍCIO DA MUDANÇA ---
         for i, trade in enumerate(trades):
             valores = [trade.get(col, '') for col in self.tree['columns']]
-            tag = 'oddrow' if i % 2 == 0 else 'evenrow'
+            
+            # Determina a tag de cor com base no resultado
+            resultado = trade.get('resultado_tipo')
+            if resultado == 'Gain':
+                tag = 'gain'
+            elif resultado == 'Loss':
+                tag = 'loss'
+            else:
+                tag = '' # Tag padrão (sem cor)
+
             self.tree.insert('', END, values=valores, tags=(tag,))
-        self.tree.tag_configure('oddrow', background=None)
-        self.tree.tag_configure('evenrow', background='#f0f0f0')
 
     def _limpar_campos(self):
         keys_to_clear = ['ativo', 'tipo_operacao', 'resultado_financeiro']
@@ -384,7 +397,7 @@ class TradingJournalApp:
         self.ax.grid(True)
         self.canvas.draw()
     
-    # Adicione esta função completa dentro da sua classe TradingJournalApp
+
 
     def _atualizar_dashboard(self, trades):
         metricas = analytics.calcular_metricas(trades)
@@ -414,11 +427,25 @@ class TradingJournalApp:
 
 def main():
     
+    MIN_LOAD_TIME_MS = 4000
+
+    
     root = ttk.Window(themename="litera")
     root.withdraw()
 
     
     loading_screen = LoadingScreen(root)
+    
+    
+    start_time_ms = int(time.time() * 1000)
+
+    def finalize_loading():
+        """
+        Função dedicada a fechar o loading e exibir o app.
+        """
+        loading_screen.destroy()
+        root.deiconify()
+        root.geometry("1100x750")
 
     def initialize_app():
         """
@@ -427,26 +454,32 @@ def main():
         try:
             
             data_manager.inicializar_banco()
-
-            
             app = TradingJournalApp(root)
 
+            
+            end_time_ms = int(time.time() * 1000)
+            elapsed_ms = end_time_ms - start_time_ms
+
+            
+            wait_ms = MIN_LOAD_TIME_MS - elapsed_ms
+
+            if wait_ms > 0:
+                
+                root.after(wait_ms, finalize_loading)
+            else:
+                
+                finalize_loading()
+
         except Exception as e:
+            
             loading_screen.destroy()
             messagebox.showerror("Erro Fatal na Inicialização",
                                  f"O aplicativo não pôde ser iniciado.\n\n{e}")
             root.destroy()
             return
 
-        
-        loading_screen.destroy()
-
-        
-        root.deiconify()
-        
-        root.geometry("1100x750")
-
     
+
     root.after(100, initialize_app)
 
     
