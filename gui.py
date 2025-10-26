@@ -10,6 +10,64 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import api_service
 
+class LoadingScreen(ttk.Toplevel):
+    """
+    Uma tela de loading (splash screen) simples para o aplicativo.
+    """
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Carregando...")
+
+        # Obter dimensões da tela
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # Definir tamanho da janela de loading
+        width = 320
+        height = 130
+
+        # Calcular posição para centralizar
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+
+        self.geometry(f'{width}x{height}+{x}+{y}')
+        self.overrideredirect(True) # Remove a barra de título e bordas padrão
+
+        # --- Design da Tela ---
+        # Frame externo para criar uma borda colorida
+        frame_borda = ttk.Frame(self, bootstyle="primary", padding=2)
+        frame_borda.pack(fill=BOTH, expand=True)
+
+        # Frame interno claro
+        frame_interno = ttk.Frame(frame_borda, bootstyle="light")
+        frame_interno.pack(fill=BOTH, expand=True)
+
+        ttk.Label(
+            frame_interno,
+            text="Diário de Trader",
+            font=("-size 14 -weight bold"),
+            bootstyle="inverse-light" # Inverte a cor para o fundo claro
+        ).pack(pady=(20, 10))
+
+        # Barra de progresso indeterminada (fica se movendo)
+        progress = ttk.Progressbar(
+            frame_interno,
+            mode='indeterminate',
+            bootstyle=(STRIPED, "primary")
+        )
+        progress.pack(fill=X, padx=20, pady=5)
+        progress.start(15) # Inicia a animação da barra
+
+        ttk.Label(
+            frame_interno,
+            text="Inicializando, por favor aguarde...",
+            font=("-size 9"),
+            bootstyle="inverse-light"
+        ).pack(pady=(0, 15))
+
+        # Força a atualização da interface para que a janela apareça
+        self.update_idletasks()
+
 # Dicionário com os valores por ponto dos principais ativos
 VALORES_POR_PONTO = {
     "Micro E-mini Dow (MYM)": 0.50,
@@ -355,9 +413,43 @@ class TradingJournalApp:
             self.saldo_brl_label.config(text="Cotação N/A", bootstyle="warning")
 
 def main():
-    data_manager.inicializar_banco()
+    
     root = ttk.Window(themename="litera")
-    app = TradingJournalApp(root)
+    root.withdraw()
+
+    
+    loading_screen = LoadingScreen(root)
+
+    def initialize_app():
+        """
+        Função que contém as tarefas de inicialização demoradas.
+        """
+        try:
+            
+            data_manager.inicializar_banco()
+
+            
+            app = TradingJournalApp(root)
+
+        except Exception as e:
+            loading_screen.destroy()
+            messagebox.showerror("Erro Fatal na Inicialização",
+                                 f"O aplicativo não pôde ser iniciado.\n\n{e}")
+            root.destroy()
+            return
+
+        
+        loading_screen.destroy()
+
+        
+        root.deiconify()
+        
+        root.geometry("1100x750")
+
+    
+    root.after(100, initialize_app)
+
+    
     root.mainloop()
 
 if __name__ == "__main__":
