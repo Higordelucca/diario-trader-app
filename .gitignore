@@ -10,3 +10,11 @@ __pycache__/
 # Arquivos de ambiente virtual (se usar no futuro)
 venv/
 .venv/
+
+# Pastas e arquivos de compilação do PyInstaller
+/dist/
+/build/
+*.spec
+
+# Executáveis
+*.exe
